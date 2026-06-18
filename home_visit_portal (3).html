@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhysioVisit — Home Visit Verification Portal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --teal: #0d9488;
+    --teal-light: #14b8a6;
+    --teal-dark: #0f766e;
+    --teal-faint: #f0fdfa;
+    --navy: #0f172a;
+    --slate: #334155;
+    --mid: #64748b;
+    --soft: #94a3b8;
+    --border: #e2e8f0;
+    --white: #ffffff;
+    --arrive: #059669;
+    --arrive-bg: #ecfdf5;
+    --out: #dc2626;
+    --out-bg: #fef2f2;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #f8fafc;
+    color: var(--navy);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--navy);
+    padding: 0 24px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 18px; font-weight: 700; color: var(--white);
+    letter-spacing: -0.3px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px; background: var(--teal);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .header-time {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--teal-light); font-size: 14px; font-weight: 500;
+  }
+
+  /* ── TABS ── */
+  .tab-bar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    padding: 0 24px;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 16px 20px;
+    font-size: 14px; font-weight: 500;
+    color: var(--mid); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab:hover { color: var(--teal); }
+  .tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+  /* ── MAIN ── */
+  main { max-width: 900px; margin: 0 auto; padding: 28px 20px; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 16px; font-weight: 600; color: var(--navy);
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap-8px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-title .icon { margin-right: 8px; font-size: 18px; }
+
+  /* ── FORM ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:600px){ .grid-2 { grid-template-columns: 1fr; } }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 12px; font-weight: 600; color: var(--slate); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  input, select, textarea {
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--navy);
+    background: var(--white);
+    transition: border 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(13,148,136,0.12);
+  }
+  textarea { resize: vertical; min-height: 72px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 11px 22px; border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--teal); color: white; }
+  .btn-primary:hover { background: var(--teal-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13,148,136,0.3); }
+  .btn-arrive { background: var(--arrive); color: white; }
+  .btn-arrive:hover { background: #047857; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(5,150,105,0.3); }
+  .btn-out { background: var(--out); color: white; }
+  .btn-out:hover { background: #b91c1c; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(220,38,38,0.3); }
+  .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--slate); }
+  .btn-outline:hover { border-color: var(--teal); color: var(--teal); }
+  .btn-sm { padding: 7px 14px; font-size: 13px; }
+
+  /* ── QR SCANNER ── */
+  #qr-reader { width: 100%; border-radius: 10px; overflow: hidden; }
+  #qr-reader video { border-radius: 10px; }
+
+  .scan-status {
+    padding: 14px 18px; border-radius: 8px;
+    font-size: 14px; font-weight: 500;
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 12px;
+  }
+  .scan-status.idle { background: #f1f5f9; color: var(--mid); }
+  .scan-status.success { background: var(--arrive-bg); color: var(--arrive); }
+  .scan-status.error { background: var(--out-bg); color: var(--out); }
+  .scan-status.scanning { background: var(--amber-bg); color: var(--amber); }
+
+  /* ── VISIT TYPE TOGGLE ── */
+  .visit-toggle {
+    display: flex; gap: 10px; margin-bottom: 20px;
+  }
+  .visit-toggle label {
+    flex: 1; text-align: center;
+    padding: 12px; border-radius: 8px; cursor: pointer;
+    border: 2px solid var(--border);
+    font-size: 14px; font-weight: 600; text-transform: none; letter-spacing: 0;
+    transition: all 0.15s; color: var(--mid);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .visit-toggle input { display: none; }
+  .visit-toggle input:checked + label.arrive-label {
+    background: var(--arrive-bg); border-color: var(--arrive); color: var(--arrive);
+  }
+  .visit-toggle input:checked + label.out-label {
+    background: var(--out-bg); border-color: var(--out); color: var(--out);
+  }
+
+  /* ── QR GENERATE ── */
+  #qr-output {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px; padding: 20px; background: var(--teal-faint);
+    border-radius: 10px; border: 1px solid #99f6e4;
+  }
+  #qr-canvas { border-radius: 8px; box-shadow: var(--shadow); }
+
+  /* ── SLIP ── */
+  #slip {
+    border: 2px dashed var(--border); border-radius: 10px;
+    padding: 20px; max-width: 360px; margin: 0 auto;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    line-height: 1.7; color: var(--navy);
+    background: white;
+  }
+  #slip .slip-header { text-align: center; font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  #slip .slip-divider { border: none; border-top: 1px dashed var(--border); margin: 8px 0; }
+  #slip .slip-row { display: flex; justify-content: space-between; }
+  #slip .slip-row span:first-child { color: var(--mid); }
+
+  /* ── LOG TABLE ── */
+  .log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .log-table th {
+    padding: 10px 14px; text-align: left; font-size: 11px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--mid); background: #f8fafc;
+    border-bottom: 1px solid var(--border);
+  }
+  .log-table td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; }
+  .log-table tr:hover td { background: var(--teal-faint); }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-arrive { background: var(--arrive-bg); color: var(--arrive); }
+  .badge-out { background: var(--out-bg); color: var(--out); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--navy); color: white;
+    padding: 14px 20px; border-radius: 10px;
+    font-size: 14px; font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
+    z-index: 999;
+    display: flex; align-items: center; gap: 10px;
+    max-width: 340px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── LOADING ── */
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.7s linear infinite; display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-bottom: 20px;
+  }
+  @media(max-width:600px){ .summary-grid { grid-template-columns: 1fr 1fr; } }
+  .stat-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px; text-align: center;
+  }
+  .stat-val { font-size: 28px; font-weight: 700; color: var(--teal); line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--mid); margin-top: 4px; }
+
+  .empty-state {
+    text-align: center; padding: 40px; color: var(--soft);
+    font-size: 14px;
+  }
+  .empty-state .big { font-size: 40px; margin-bottom: 8px; }
+
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  .row { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+  .flex-end { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏠</div>
+    PhysioVisit
+  </div>
+  <div class="header-time" id="clock">--:--:--</div>
+</header>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('scan')" id="tab-scan">📷 QR Scanner</div>
+  <div class="tab" onclick="switchTab('manual')" id="tab-manual">✏️ Manual Entry</div>
+  <div class="tab" onclick="switchTab('generate')" id="tab-generate">🆔 Generate Patient QR</div>
+  <div class="tab" onclick="switchTab('log')" id="tab-log">📋 Visit Log</div>
+</div>
+
+<main>
+
+<!-- ════════════════════════════════════
+     SECTION 1 – QR SCANNER
+════════════════════════════════════ -->
+<section id="sec-scan" class="section active">
+
+  <div class="card">
+    <div class="card-title"><span class="icon">📷</span> Scan Patient QR Code</div>
+
+    <div class="visit-toggle">
+      <input type="radio" name="scan-type" id="st-arrive" value="Arrived" checked>
+      <label for="st-arrive" class="arrive-label">✅ Arrived</label>
+      <input type="radio" name="scan-type" id="st-out" value="Outing">
+      <label for="st-out" class="out-label">🚪 Outing</label>
+    </div>
+
+    <div id="qr-reader"></div>
+
+    <div class="scan-status idle" id="scan-status">
+      <span>🎯</span> Point camera at patient QR code to scan
+    </div>
+
+    <div class="flex-end" style="margin-top:14px;">
+      <button class="btn btn-outline btn-sm" onclick="stopScanner()">⏹ Stop Camera</button>
+      <button class="btn btn-primary btn-sm" onclick="startScanner()">▶ Start Camera</button>
+    </div>
+  </div>
+
+  <!-- Pre-filled from QR – editable before submit -->
+  <div class="card" id="scan-form-card" style="display:none;">
+    <div class="card-title"><span class="icon">📝</span> Confirm Visit Details</div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label>Patient Name</label>
+        <input type="text" id="s-name" placeholder="Patient full name">
+      </div>
+      <div class="field">
+        <label>Age</label>
+        <input type="number" id="s-age" placeholder="Age">
+      </div>
+      <div class="field">
+        <label>Location / Address</label>
+        <input type="text" id="s-location" placeholder="Patient home address">
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="s-date">
+      </div>
+      <div class="field">
+        <label>Time</label>
+        <input type="time" id="s-time">
+      </div>
+      <div class="field">
+        <label>Travel Amount (₹)</label>
+        <input type="number" id="s-amount" placeholder="e.g. 150">
+      </div>
+      <div class="field">
+        <label>Visit Type</label>
+        <input type="text" id="s-vtype" readonly style="background:#f8fafc;">
+      </div>
+      <div class="field">
+        <label>Physiotherapist *</label>
+        <select id="s-physio" onchange="updateAmountFromPhysio('s-physio', 's-amount')" required>
+          <option value="">-- Select Therapist --</option>
+        </select>
+      </div>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Notes</label>
+      <textarea id="s-notes" placeholder="Optional notes…"></textarea>
+    </div>
+
+    <div class="flex-end">
+      <button class="btn btn-outline" onclick="clearScanForm()">✖ Cancel</button>
+      <button class="btn btn-arrive" id="scan-submit-btn" onclick="submitScanData()">✅ Submit Arrival</button>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ════════════════════════════════════
+     SECTION 2 – MANUAL ENTRY
+════════════════════════════════════ -->
+<section id="sec-manual" class="section">
+
+  <div class="card">
+    <div class="card-title"><span class="icon">✏️</span> Manual Visit Entry</div>
+
+    <div class="visit-toggle">
+      <input type="radio" name="man-type" id="mt-arrive" value="Arrived" checked>
+      <label for="mt-arrive" class="arrive-label">✅ Arrived</label>
+      <input type="radio" name="man-type" id="mt-out" value="Outing">
+      <label for="mt-out" class="out-label">🚪 Outing</label>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label>Patient Name *</label>
+        <input type="text" id="m-name" placeholder="Full name" required>
+      </div>
+      <div class="field">
+        <label>Age *</label>
+        <input type="number" id="m-age" placeholder="Years" required>
+      </div>
+      <div class="field">
+        <label>Location / Address *</label>
+        <input type="text" id="m-location" placeholder="Patient home address" required>
+      </div>
+      <div class="field">
+        <label>Date *</label>
+        <input type="date" id="m-date" required>
+      </div>
+      <div class="field">
+        <label>Time *</label>
+        <input type="time" id="m-time" required>
+      </div>
+      <div class="field">
+        <label>Travel Amount (₹)</label>
+        <input type="number" id="m-amount" placeholder="e.g. 200">
+      </div>
+      <div class="field">
+        <label>Physiotherapist Name *</label>
+        <select id="m-physio" onchange="updateAmountFromPhysio('m-physio', 'm-amount')" required>
+          <option value="">-- Select Therapist --</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Daily Need / Purpose</label>
+        <input type="text" id="m-need" placeholder="e.g. Mobility exercises">
+      </div>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Notes</label>
+      <textarea id="m-notes" placeholder="Additional notes…"></textarea>
+    </div>
+
+    <div class="flex-end">
+      <button class="btn btn-outline" onclick="clearManual()">✖ Clear</button>
+      <button class="btn btn-primary" id="man-submit-btn" onclick="submitManual()">📤 Submit Entry</button>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ════════════════════════════════════
+     SECTION 3 – GENERATE PATIENT QR
+════════════════════════════════════ -->
+<section id="sec-generate" class="section">
+
+  <div class="card">
+    <div class="card-title"><span class="icon">🆔</span> Generate Patient QR Code & Slip</div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label>Patient Name *</label>
+        <input type="text" id="g-name" placeholder="Full name">
+      </div>
+      <div class="field">
+        <label>Age *</label>
+        <input type="number" id="g-age" placeholder="Years">
+      </div>
+      <div class="field">
+        <label>Location / Address *</label>
+        <input type="text" id="g-location" placeholder="Patient home address">
+      </div>
+      <div class="field">
+        <label>Daily Need / Treatment</label>
+        <input type="text" id="g-need" placeholder="e.g. Post-op rehab">
+      </div>
+      <div class="field">
+        <label>Physiotherapist *</label>
+        <select id="g-physio" onchange="updateAmountFromPhysio('g-physio', 'g-amount')" required>
+          <option value="">-- Select Therapist --</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Travel Amount (₹) <small style="color:#888;">(auto-filled)</small></label>
+        <input type="number" id="g-amount" placeholder="Auto-filled from therapist" readonly style="background:#f8fafc;">
+      </div>
+    </div>
+
+    <div class="flex-end">
+      <button class="btn btn-primary" onclick="generateQR()">🔲 Generate QR + Slip</button>
+    </div>
+  </div>
+
+  <div class="card" id="qr-result-card" style="display:none;">
+    <div class="card-title"><span class="icon">✅</span> Patient QR Code</div>
+
+    <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+
+      <div id="qr-output">
+        <div id="qr-canvas"></div>
+        <div style="font-size:12px; color:var(--mid); font-family:'JetBrains Mono',monospace;" id="qr-pid"></div>
+      </div>
+
+      <div id="slip">
+        <div class="slip-header">🏠 PhysioVisit Slip</div>
+        <hr class="slip-divider">
+        <div class="slip-row"><span>Name:</span><span id="sl-name">—</span></div>
+        <div class="slip-row"><span>Age:</span><span id="sl-age">—</span></div>
+        <div class="slip-row"><span>Location:</span><span id="sl-loc">—</span></div>
+        <div class="slip-row"><span>Daily Need:</span><span id="sl-need">—</span></div>
+        <div class="slip-row"><span>Physio:</span><span id="sl-physio">—</span></div>
+        <div class="slip-row"><span>Travel ₹:</span><span id="sl-amount">—</span></div>
+        <hr class="slip-divider">
+        <div style="text-align:center; color:var(--mid); font-size:11px;">Scan QR on each visit<br>Arrived ▶ Outing</div>
+      </div>
+
+    </div>
+
+    <div class="flex-end" style="margin-top:20px;">
+      <button class="btn btn-outline" onclick="printSlip()">🖨️ Print Slip</button>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ════════════════════════════════════
+     SECTION 4 – VISIT LOG
+════════════════════════════════════ -->
+<section id="sec-log" class="section">
+
+  <div class="summary-grid">
+    <div class="stat-card">
+      <div class="stat-val" id="stat-total">0</div>
+      <div class="stat-label">Total Entries</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-arrived" style="color:var(--arrive)">0</div>
+      <div class="stat-label">Arrivals Today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-out" style="color:var(--out)">0</div>
+      <div class="stat-label">Outings Today</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="icon">📋</span> Visit Log</div>
+    <div style="overflow-x:auto;">
+      <table class="log-table" id="log-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Patient</th>
+            <th>Age</th>
+            <th>Location</th>
+            <th>Type</th>
+            <th>Time</th>
+            <th>Travel ₹</th>
+            <th>Physio</th>
+          </tr>
+        </thead>
+        <tbody id="log-body">
+          <tr><td colspan="8"><div class="empty-state"><div class="big">📭</div>No entries yet. Scan or add a visit.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+
+</main>
+
+<!-- TOAST -->
+<div id="toast">✅ <span id="toast-msg">Done</span></div>
+
+
+<script>
+// ════════ GOOGLE SHEETS CONFIG ════════
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyiiwG-1o8vxzwaleHpoQXgYPP2j8tpPXogk1qOC-foWY0vvTuw4I7qN_BcGLoMyGAI/exec";
+
+// ════════ PHYSIOTHERAPIST TRAVEL RATES ════════
+// Edit this to add/update physiotherapists and their travel amounts (₹)
+const PHYSIOTHERAPIST_RATES = {
+  'Dr. Ramesh Kumar': 150,
+  'Ms. Priya Singh': 200,
+  'Mr. Anil Sharma': 175,
+  'Dr. Neha Gupta': 225,
+  'Mr. Vikram Patel': 180,
+  'Other': 0
+};
+
+// ════════ STATE ════════
+let visitLog = JSON.parse(localStorage.getItem('visitLog') || '[]');
+let html5QrCode = null;
+let scannerActive = false;
+
+// ════════ POPULATE PHYSIOTHERAPIST DROPDOWNS ════════
+function populatePhysioDropdowns() {
+  const selects = ['s-physio', 'm-physio', 'g-physio'];
+  selects.forEach(id => {
+    const select = document.getElementById(id);
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">-- Select Therapist --</option>';
+    Object.keys(PHYSIOTHERAPIST_RATES).forEach(physio => {
+      const option = document.createElement('option');
+      option.value = physio;
+      option.textContent = physio;
+      select.appendChild(option);
+    });
+    select.value = currentValue;
+  });
+}
+
+// ════════ AUTO-FILL TRAVEL AMOUNT ════════
+function updateAmountFromPhysio(physioFieldId, amountFieldId) {
+  const physio = document.getElementById(physioFieldId).value;
+  const amount = PHYSIOTHERAPIST_RATES[physio] || 0;
+  document.getElementById(amountFieldId).value = amount > 0 ? amount : '';
+}
+
+// ════════ CLOCK ════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-IN');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Set today's date & time on form fields
+function setNow(dateId, timeId) {
+  const now = new Date();
+  document.getElementById(dateId).value = now.toISOString().split('T')[0];
+  document.getElementById(timeId).value = now.toTimeString().slice(0,5);
+}
+setNow('s-date','s-time');
+setNow('m-date','m-time');
+
+// ════════ TAB SWITCHING ════════
+function switchTab(tab) {
+  ['scan','manual','generate','log'].forEach(t => {
+    document.getElementById(`sec-${t}`).classList.remove('active');
+    document.getElementById(`tab-${t}`).classList.remove('active');
+  });
+  document.getElementById(`sec-${tab}`).classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  if (tab === 'log') renderLog();
+}
+
+// ════════ TOAST ════════
+function toast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  el.style.background = isError ? '#dc2626' : '#0f172a';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ════════ QR SCANNER ════════
+function startScanner() {
+  if (scannerActive) return;
+  html5QrCode = new Html5Qrcode("qr-reader");
+  setStatus('scanning', '📡 Camera active — hold QR code steady…');
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: { width: 250, height: 250 } },
+    onScanSuccess,
+    () => {}
+  ).then(() => { scannerActive = true; })
+   .catch(err => setStatus('error', '❌ Camera error: ' + err));
+}
+
+function stopScanner() {
+  if (html5QrCode && scannerActive) {
+    html5QrCode.stop().then(() => {
+      scannerActive = false;
+      setStatus('idle', '🎯 Scanner stopped. Press Start to scan.');
+    });
+  }
+}
+
+function setStatus(type, msg) {
+  const el = document.getElementById('scan-status');
+  el.className = `scan-status ${type}`;
+  el.innerHTML = msg;
+}
+
+function onScanSuccess(decoded) {
+  stopScanner();
+  try {
+    const data = JSON.parse(decoded);
+    // Fill scan form from QR data
+    document.getElementById('s-name').value = data.name || '';
+    document.getElementById('s-age').value = data.age || '';
+    document.getElementById('s-location').value = data.location || '';
+    document.getElementById('s-physio').value = data.physio || '';
+    document.getElementById('s-notes').value = data.need || '';
+    setNow('s-date','s-time');
+    // Auto-fill amount based on selected physiotherapist
+    if (data.physio) {
+      updateAmountFromPhysio('s-physio', 's-amount');
+    } else {
+      document.getElementById('s-amount').value = data.amount || '';
+    }
+    updateScanType();
+    document.getElementById('scan-form-card').style.display = 'block';
+    setStatus('success', '✅ QR scanned successfully! Confirm details below.');
+    document.getElementById('scan-form-card').scrollIntoView({behavior:'smooth'});
+  } catch {
+    // Plain text QR
+    document.getElementById('s-name').value = decoded;
+    setNow('s-date','s-time');
+    updateScanType();
+    document.getElementById('scan-form-card').style.display = 'block';
+    setStatus('success', '✅ QR scanned! Please fill remaining details.');
+  }
+}
+
+function updateScanType() {
+  const type = document.querySelector('input[name="scan-type"]:checked').value;
+  document.getElementById('s-vtype').value = type;
+  const btn = document.getElementById('scan-submit-btn');
+  if (type === 'Arrived') {
+    btn.className = 'btn btn-arrive';
+    btn.textContent = '✅ Submit Arrival';
+  } else {
+    btn.className = 'btn btn-out';
+    btn.textContent = '🚪 Submit Outing';
+  }
+}
+
+document.querySelectorAll('input[name="scan-type"]').forEach(r => r.addEventListener('change', updateScanType));
+
+function clearScanForm() {
+  document.getElementById('scan-form-card').style.display = 'none';
+  ['s-name','s-age','s-location','s-amount','s-physio','s-notes'].forEach(id => document.getElementById(id).value = '');
+  setStatus('idle','🎯 Point camera at patient QR code to scan');
+}
+
+// ════════ SUBMIT SCAN DATA ════════
+async function submitScanData() {
+  const payload = {
+    date: document.getElementById('s-date').value,
+    patientName: document.getElementById('s-name').value,
+    age: document.getElementById('s-age').value,
+    location: document.getElementById('s-location').value,
+    visitType: document.getElementById('s-vtype').value,
+    time: document.getElementById('s-time').value,
+    travelAmount: document.getElementById('s-amount').value,
+    physiotherapist: document.getElementById('s-physio').value,
+    notes: document.getElementById('s-notes').value,
+    source: 'QR Scan'
+  };
+  if (!payload.patientName) { toast('Please enter patient name', true); return; }
+  await sendToSheet(payload);
+  clearScanForm();
+}
+
+// ════════ MANUAL SUBMIT ════════
+async function submitManual() {
+  const type = document.querySelector('input[name="man-type"]:checked').value;
+  const payload = {
+    date: document.getElementById('m-date').value,
+    patientName: document.getElementById('m-name').value,
+    age: document.getElementById('m-age').value,
+    location: document.getElementById('m-location').value,
+    visitType: type,
+    time: document.getElementById('m-time').value,
+    travelAmount: document.getElementById('m-amount').value,
+    physiotherapist: document.getElementById('m-physio').value,
+    notes: document.getElementById('m-notes').value + (document.getElementById('m-need').value ? ' | Need: ' + document.getElementById('m-need').value : ''),
+    source: 'Manual'
+  };
+  if (!payload.patientName || !payload.location) { toast('Name & location required', true); return; }
+  await sendToSheet(payload);
+  clearManual();
+}
+
+function clearManual() {
+  ['m-name','m-age','m-location','m-amount','m-physio','m-need','m-notes'].forEach(id => document.getElementById(id).value = '');
+  setNow('m-date','m-time');
+}
+
+// ════════ SEND TO GOOGLE SHEETS ════════
+async function sendToSheet(payload) {
+  const btn = event?.target;
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Submitting…'; }
+
+  // Save locally regardless
+  visitLog.unshift({ ...payload, id: Date.now() });
+  localStorage.setItem('visitLog', JSON.stringify(visitLog));
+
+  if (GOOGLE_SCRIPT_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE") {
+    toast('⚠️ Saved locally. Set up Google Script URL to sync to Sheets.');
+    if (btn) { btn.disabled = false; btn.innerHTML = btn.dataset.origText || 'Submit'; }
+    return;
+  }
+
+  try {
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    toast(`✅ ${payload.visitType} recorded & synced to Google Sheets!`);
+  } catch (err) {
+    toast('⚠️ Saved locally. Sheet sync failed — check URL.', true);
+  }
+
+  if (btn) { btn.disabled = false; }
+}
+
+// ════════ GENERATE QR ════════
+function generateQR() {
+  const name = document.getElementById('g-name').value.trim();
+  const age = document.getElementById('g-age').value.trim();
+  const location = document.getElementById('g-location').value.trim();
+  if (!name || !location) { toast('Name & location required', true); return; }
+
+  const data = {
+    name,
+    age,
+    location,
+    need: document.getElementById('g-need').value,
+    physio: document.getElementById('g-physio').value,
+    amount: document.getElementById('g-amount').value,
+    pid: 'PT-' + Date.now().toString(36).toUpperCase()
+  };
+
+  document.getElementById('qr-canvas').innerHTML = '';
+  new QRCode(document.getElementById('qr-canvas'), {
+    text: JSON.stringify(data),
+    width: 200, height: 200,
+    colorDark: '#0f172a', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  document.getElementById('qr-pid').textContent = data.pid;
+
+  // Fill slip
+  document.getElementById('sl-name').textContent = name;
+  document.getElementById('sl-age').textContent = age + ' yrs';
+  document.getElementById('sl-loc').textContent = location;
+  document.getElementById('sl-need').textContent = data.need || '—';
+  document.getElementById('sl-physio').textContent = data.physio || '—';
+  document.getElementById('sl-amount').textContent = data.amount ? '₹' + data.amount : '—';
+
+  document.getElementById('qr-result-card').style.display = 'block';
+  document.getElementById('qr-result-card').scrollIntoView({behavior:'smooth'});
+  toast('✅ QR Code generated successfully!');
+}
+
+function printSlip() {
+  const slipEl = document.getElementById('slip');
+  const qrEl = document.getElementById('qr-canvas');
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <html><head><title>PhysioVisit Slip</title>
+    <style>
+      body { font-family: monospace; padding: 20px; }
+      img { display:block; margin: 10px auto; }
+      .row { display:flex; justify-content:space-between; margin:4px 0; }
+      hr { border: 1px dashed #ccc; margin: 8px 0; }
+      h3 { text-align:center; }
+    </style></head><body>
+    ${qrEl.innerHTML}
+    ${slipEl.innerHTML}
+    </body></html>`);
+  win.document.close();
+  win.print();
+}
+
+// ════════ RENDER LOG ════════
+function renderLog() {
+  const tbody = document.getElementById('log-body');
+  if (!visitLog.length) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="big">📭</div>No entries yet.</div></td></tr>';
+    document.getElementById('stat-total').textContent = 0;
+    document.getElementById('stat-arrived').textContent = 0;
+    document.getElementById('stat-out').textContent = 0;
+    return;
+  }
+  const today = new Date().toISOString().split('T')[0];
+  const todayRows = visitLog.filter(r => r.date === today);
+  document.getElementById('stat-total').textContent = visitLog.length;
+  document.getElementById('stat-arrived').textContent = todayRows.filter(r => r.visitType === 'Arrived').length;
+  document.getElementById('stat-out').textContent = todayRows.filter(r => r.visitType === 'Outing').length;
+
+  tbody.innerHTML = visitLog.slice(0,50).map(row => `
+    <tr>
+      <td>${row.date || '—'}</td>
+      <td><strong>${row.patientName || '—'}</strong></td>
+      <td>${row.age || '—'}</td>
+      <td style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${row.location}">${row.location || '—'}</td>
+      <td><span class="badge ${row.visitType==='Arrived'?'badge-arrive':'badge-out'}">${row.visitType==='Arrived'?'✅':'🚪'} ${row.visitType}</span></td>
+      <td>${row.time || '—'}</td>
+      <td>${row.travelAmount ? '₹'+row.travelAmount : '—'}</td>
+      <td>${row.physiotherapist || '—'}</td>
+    </tr>`).join('');
+}
+
+// ════════ INIT ════════
+populatePhysioDropdowns();
+startScanner();
+
+// Auto-update visit type labels for manual
+document.querySelectorAll('input[name="man-type"]').forEach(r => {
+  r.addEventListener('change', () => {
+    const type = document.querySelector('input[name="man-type"]:checked').value;
+    const btn = document.getElementById('man-submit-btn');
+    if (type === 'Arrived') {
+      btn.className = 'btn btn-arrive';
+      btn.textContent = '✅ Submit Arrival';
+    } else {
+      btn.className = 'btn btn-out';
+      btn.textContent = '🚪 Submit Outing';
+    }
+  });
+});
+</script>
+
+<!--
+════════════════════════════════════════════════════════════════
+GOOGLE APPS SCRIPT CODE — Paste this in your Apps Script editor
+Then deploy as Web App (Execute as: Me, Access: Anyone)
+and paste the deployed URL into GOOGLE_SCRIPT_URL above.
+
+function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.openById('12egVHkYqxl0QdBadcMTnS9HX6XF8jZkMkIdqU9rnWLuluzBYTNJOYucj').getActiveSheet();
+    
+    // Add headers if first row is empty
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['Date','Patient Name','Age','Location','Visit Type','Time','Travel Amount (₹)','Physiotherapist','Notes','Source','Timestamp']);
+    }
+    
+    var data = JSON.parse(e.postData.contents);
+    sheet.appendRow([
+      data.date,
+      data.patientName,
+      data.age,
+      data.location,
+      data.visitType,
+      data.time,
+      data.travelAmount,
+      data.physiotherapist,
+      data.notes,
+      data.source,
+      new Date().toISOString()
+    ]);
+    
+    return ContentService.createTextOutput(JSON.stringify({status:'OK'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status:'ERROR', message: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+════════════════════════════════════════════════════════════════
+-->
+
+</body>
+</html>
